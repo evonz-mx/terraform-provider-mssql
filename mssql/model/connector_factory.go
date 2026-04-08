@@ -1,7 +1,9 @@
 package model
 
-import "github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
-
+// ConnectorFactory creates a SQL Server connector from a ServerConfig.
+// The interface accepts a neutral ServerConfig rather than SDK-specific types
+// so the same factory can be driven from terraform-plugin-sdk/v2 resources
+// and terraform-plugin-framework resources alike.
 type ConnectorFactory interface {
-	GetConnector(prefix string, data *schema.ResourceData) (interface{}, error)
+	GetConnector(cfg ServerConfig) (interface{}, error)
 }

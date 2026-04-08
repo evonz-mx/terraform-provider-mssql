@@ -209,7 +209,7 @@ func resourceEntraIDLoginImport(ctx context.Context, data *schema.ResourceData, 
 
 func getEntraIDLoginConnector(meta interface{}, data *schema.ResourceData) (EntraIDLoginConnector, error) {
 	provider := meta.(model.Provider)
-	connector, err := provider.GetConnector(serverProp, data)
+	connector, err := provider.GetConnector(serverConfigFromData(serverProp, data))
 	if err != nil {
 		return nil, err
 	}

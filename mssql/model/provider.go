@@ -1,12 +1,11 @@
 package model
 
-import (
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
-	"github.com/rs/zerolog"
-)
+import "github.com/rs/zerolog"
 
+// Provider is the interface exposed by the configured mssql provider to
+// individual resources and data sources.
 type Provider interface {
-	GetConnector(prefix string, data *schema.ResourceData) (interface{}, error)
+	GetConnector(cfg ServerConfig) (interface{}, error)
 	ResourceLogger(resource, function string) zerolog.Logger
 	DataSourceLogger(datasource, function string) zerolog.Logger
 }

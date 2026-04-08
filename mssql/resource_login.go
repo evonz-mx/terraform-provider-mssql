@@ -264,7 +264,7 @@ func resourceLoginImport(ctx context.Context, data *schema.ResourceData, meta in
 
 func getLoginConnector(meta interface{}, data *schema.ResourceData) (LoginConnector, error) {
 	provider := meta.(model.Provider)
-	connector, err := provider.GetConnector(serverProp, data)
+	connector, err := provider.GetConnector(serverConfigFromData(serverProp, data))
 	if err != nil {
 		return nil, err
 	}

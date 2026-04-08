@@ -266,7 +266,7 @@ func resourceDatabaseSchemaImport(ctx context.Context, data *schema.ResourceData
 
 func getDatabaseSchemaConnector(meta interface{}, data *schema.ResourceData) (DatabaseSchemaConnector, error) {
 	provider := meta.(model.Provider)
-	connector, err := provider.GetConnector(serverProp, data)
+	connector, err := provider.GetConnector(serverConfigFromData(serverProp, data))
 	if err != nil {
 		return nil, err
 	}

@@ -274,7 +274,7 @@ func resourceDatabaseCredentialImport(ctx context.Context, data *schema.Resource
 
 func getDatabaseCredentialConnector(meta interface{}, data *schema.ResourceData) (DatabaseCredentialConnector, error) {
 	provider := meta.(model.Provider)
-	connector, err := provider.GetConnector(serverProp, data)
+	connector, err := provider.GetConnector(serverConfigFromData(serverProp, data))
 	if err != nil {
 		return nil, err
 	}

@@ -14,7 +14,6 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/policy"
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 	"github.com/ValeruS/terraform-provider-mssql/mssql/model"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	mssql "github.com/microsoft/go-mssqldb"
 	"github.com/microsoft/go-mssqldb/azuread"
 	"github.com/pkg/errors"
@@ -26,49 +25,40 @@ func GetFactory() model.ConnectorFactory {
 	return new(factory)
 }
 
-func (f factory) GetConnector(prefix string, data *schema.ResourceData) (interface{}, error) {
-	if len(prefix) > 0 {
-		prefix = prefix + ".0."
-	}
-
+func (f factory) GetConnector(cfg model.ServerConfig) (interface{}, error) {
 	connector := &Connector{
-		Host:    data.Get(prefix + "host").(string),
-		Port:    data.Get(prefix + "port").(string),
-		Timeout: data.Timeout(schema.TimeoutRead),
+		Host:    cfg.Host,
+		Port:    cfg.Port,
+		Timeout: cfg.Timeout,
 	}
 
-	if admin, ok := data.GetOk(prefix + "login.0"); ok {
-		admin := admin.(map[string]interface{})
+	if cfg.Login != nil {
 		connector.Login = &LoginUser{
-			Username: admin["username"].(string),
-			Password: admin["password"].(string),
+			Username: cfg.Login.Username,
+			Password: cfg.Login.Password,
 		}
 	}
 
-	if admin, ok := data.GetOk(prefix + "azure_login.0"); ok {
-		admin := admin.(map[string]interface{})
+	if cfg.Azure != nil {
 		connector.AzureLogin = &AzureLogin{
-			TenantID:     admin["tenant_id"].(string),
-			ClientID:     admin["client_id"].(string),
-			ClientSecret: admin["client_secret"].(string),
+			TenantID:     cfg.Azure.TenantID,
+			ClientID:     cfg.Azure.ClientID,
+			ClientSecret: cfg.Azure.ClientSecret,
 		}
 	}
 
-	if chainAuthList, ok := data.Get(prefix + "azuread_default_chain_auth").([]interface{}); ok && len(chainAuthList) > 0 && chainAuthList[0] != nil {
-		if useOidc, _ := chainAuthList[0].(map[string]interface{})["use_oidc"].(bool); useOidc {
-			connector.FedauthOIDC = &FedauthOIDC{
-				TenantID:          os.Getenv("ARM_TENANT_ID"),
-				ClientID:          os.Getenv("ARM_CLIENT_ID"),
-				OIDCToken:         os.Getenv("ARM_OIDC_TOKEN"),
-				OIDCTokenFilePath: os.Getenv("ARM_OIDC_TOKEN_FILE_PATH"),
-			}
+	if cfg.ChainAuth != nil && cfg.ChainAuth.UseOIDC {
+		connector.FedauthOIDC = &FedauthOIDC{
+			TenantID:          os.Getenv("ARM_TENANT_ID"),
+			ClientID:          os.Getenv("ARM_CLIENT_ID"),
+			OIDCToken:         os.Getenv("ARM_OIDC_TOKEN"),
+			OIDCTokenFilePath: os.Getenv("ARM_OIDC_TOKEN_FILE_PATH"),
 		}
 	}
 
-	if admin, ok := data.GetOk(prefix + "azuread_managed_identity_auth.0"); ok {
-		admin := admin.(map[string]interface{})
+	if cfg.MSI != nil {
 		connector.FedauthMSI = &FedauthMSI{
-			UserID: admin["user_id"].(string),
+			UserID: cfg.MSI.UserID,
 		}
 	}
 

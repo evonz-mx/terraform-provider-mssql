@@ -87,8 +87,8 @@ func providerConfigure(ctx context.Context, data *schema.ResourceData, factory m
 	return mssqlProvider{factory: factory, logger: logger}, nil
 }
 
-func (p mssqlProvider) GetConnector(prefix string, data *schema.ResourceData) (interface{}, error) {
-	return p.factory.GetConnector(prefix, data)
+func (p mssqlProvider) GetConnector(cfg model.ServerConfig) (interface{}, error) {
+	return p.factory.GetConnector(cfg)
 }
 
 func (p mssqlProvider) ResourceLogger(resource, function string) zerolog.Logger {

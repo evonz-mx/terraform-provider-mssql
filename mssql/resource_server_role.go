@@ -249,7 +249,7 @@ func resourceServerRoleImport(ctx context.Context, data *schema.ResourceData, me
 
 func getServerRoleConnector(meta interface{}, data *schema.ResourceData) (ServerRoleConnector, error) {
 	provider := meta.(model.Provider)
-	connector, err := provider.GetConnector(serverProp, data)
+	connector, err := provider.GetConnector(serverConfigFromData(serverProp, data))
 	if err != nil {
 		return nil, err
 	}

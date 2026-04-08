@@ -188,7 +188,7 @@ func resourceServerRoleMemberDelete(ctx context.Context, data *schema.ResourceDa
 
 func getServerRoleMemberConnector(meta interface{}, data *schema.ResourceData) (ServerRoleMemberConnector, error) {
 	provider := meta.(model.Provider)
-	connector, err := provider.GetConnector(serverProp, data)
+	connector, err := provider.GetConnector(serverConfigFromData(serverProp, data))
 	if err != nil {
 		return nil, err
 	}

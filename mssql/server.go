@@ -7,6 +7,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/ValeruS/terraform-provider-mssql/mssql/model"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
@@ -227,4 +228,50 @@ func getAzureLogin(values url.Values) ([]map[string]interface{}, bool) {
 		"client_id":     clientId,
 		"client_secret": clientSecret,
 	}}, inValues
+}
+
+// serverConfigFromData extracts a model.ServerConfig from a terraform-plugin-sdk/v2
+// ResourceData using the given schema prefix (e.g. "server").
+// This is the sole SDKv2-specific adapter; all other code operates on ServerConfig.
+func serverConfigFromData(prefix string, data *schema.ResourceData) model.ServerConfig {
+	if len(prefix) > 0 {
+		prefix = prefix + ".0."
+	}
+
+	cfg := model.ServerConfig{
+		Host:    data.Get(prefix + "host").(string),
+		Port:    data.Get(prefix + "port").(string),
+		Timeout: data.Timeout(schema.TimeoutRead),
+	}
+
+	if v, ok := data.GetOk(prefix + "login.0"); ok {
+		m := v.(map[string]interface{})
+		cfg.Login = &model.LoginConfig{
+			Username: m["username"].(string),
+			Password: m["password"].(string),
+		}
+	}
+
+	if v, ok := data.GetOk(prefix + "azure_login.0"); ok {
+		m := v.(map[string]interface{})
+		cfg.Azure = &model.AzureLoginConfig{
+			TenantID:     m["tenant_id"].(string),
+			ClientID:     m["client_id"].(string),
+			ClientSecret: m["client_secret"].(string),
+		}
+	}
+
+	if list, ok := data.Get(prefix + "azuread_default_chain_auth").([]interface{}); ok && len(list) > 0 && list[0] != nil {
+		useOIDC, _ := list[0].(map[string]interface{})["use_oidc"].(bool)
+		cfg.ChainAuth = &model.ChainAuthConfig{UseOIDC: useOIDC}
+	}
+
+	if v, ok := data.GetOk(prefix + "azuread_managed_identity_auth.0"); ok {
+		m := v.(map[string]interface{})
+		cfg.MSI = &model.MSIConfig{
+			UserID: m["user_id"].(string),
+		}
+	}
+
+	return cfg
 }

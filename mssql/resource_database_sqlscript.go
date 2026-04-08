@@ -510,7 +510,7 @@ func resourceDatabaseSQLScriptImport(ctx context.Context, data *schema.ResourceD
 
 func getDatabaseSQLScriptConnector(meta interface{}, data *schema.ResourceData) (DatabaseSQLScriptConnector, error) {
 	provider := meta.(model.Provider)
-	connector, err := provider.GetConnector(serverProp, data)
+	connector, err := provider.GetConnector(serverConfigFromData(serverProp, data))
 	if err != nil {
 		return nil, err
 	}

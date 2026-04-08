@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/ValeruS/terraform-provider-mssql/mssql/model"
 )
 
 // newFederatedConnector is a helper that builds a Connector with a FedauthOIDC
@@ -94,26 +94,15 @@ func TestGetConnector_DefaultChainOIDC(t *testing.T) {
 	t.Setenv("ARM_OIDC_TOKEN", "env-token")
 	t.Setenv("ARM_OIDC_TOKEN_FILE_PATH", "")
 
-	res := serverSchemaResource()
-	raw := map[string]interface{}{
-		"server": []interface{}{
-			map[string]interface{}{
-				"host": "test.database.windows.net",
-				"port": "1433",
-				"azuread_default_chain_auth": []interface{}{
-					map[string]interface{}{"use_oidc": true},
-				},
-				"login":                         []interface{}{},
-				"azure_login":                   []interface{}{},
-				"azuread_managed_identity_auth": []interface{}{},
-			},
-		},
+	cfg := model.ServerConfig{
+		Host:      "test.database.windows.net",
+		Port:      "1433",
+		Timeout:   30 * time.Second,
+		ChainAuth: &model.ChainAuthConfig{UseOIDC: true},
 	}
 
-	d := schema.TestResourceDataRaw(t, res.Schema, raw)
-
 	f := new(factory)
-	iface, err := f.GetConnector("server", d)
+	iface, err := f.GetConnector(cfg)
 	if err != nil {
 		t.Fatalf("GetConnector returned error: %v", err)
 	}
@@ -147,26 +136,15 @@ func TestGetConnector_DefaultChainOIDC(t *testing.T) {
 
 func TestGetConnector_DefaultChainOIDC_False(t *testing.T) {
 	// use_oidc = false → FedauthOIDC should not be set (falls through to ActiveDirectoryDefault).
-	res := serverSchemaResource()
-	raw := map[string]interface{}{
-		"server": []interface{}{
-			map[string]interface{}{
-				"host": "test.database.windows.net",
-				"port": "1433",
-				"azuread_default_chain_auth": []interface{}{
-					map[string]interface{}{"use_oidc": false},
-				},
-				"login":                         []interface{}{},
-				"azure_login":                   []interface{}{},
-				"azuread_managed_identity_auth": []interface{}{},
-			},
-		},
+	cfg := model.ServerConfig{
+		Host:      "test.database.windows.net",
+		Port:      "1433",
+		Timeout:   30 * time.Second,
+		ChainAuth: &model.ChainAuthConfig{UseOIDC: false},
 	}
 
-	d := schema.TestResourceDataRaw(t, res.Schema, raw)
-
 	f := new(factory)
-	iface, err := f.GetConnector("server", d)
+	iface, err := f.GetConnector(cfg)
 	if err != nil {
 		t.Fatalf("GetConnector returned error: %v", err)
 	}
@@ -182,25 +160,18 @@ func TestGetConnector_DefaultChainOIDC_False(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestGetConnector_Login(t *testing.T) {
-	res := serverSchemaResource()
-	raw := map[string]interface{}{
-		"server": []interface{}{
-			map[string]interface{}{
-				"host": "localhost",
-				"port": "1433",
-				"login": []interface{}{
-					map[string]interface{}{"username": "sa", "password": "Secret123!"},
-				},
-				"azure_login":                   []interface{}{},
-				"azuread_default_chain_auth":    []interface{}{},
-				"azuread_managed_identity_auth": []interface{}{},
-			},
+	cfg := model.ServerConfig{
+		Host:    "localhost",
+		Port:    "1433",
+		Timeout: 30 * time.Second,
+		Login: &model.LoginConfig{
+			Username: "sa",
+			Password: "Secret123!",
 		},
 	}
 
-	d := schema.TestResourceDataRaw(t, res.Schema, raw)
 	f := new(factory)
-	iface, err := f.GetConnector("server", d)
+	iface, err := f.GetConnector(cfg)
 	if err != nil {
 		t.Fatalf("GetConnector returned error: %v", err)
 	}
@@ -231,29 +202,19 @@ func TestGetConnector_Login(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestGetConnector_AzureLogin(t *testing.T) {
-	res := serverSchemaResource()
-	raw := map[string]interface{}{
-		"server": []interface{}{
-			map[string]interface{}{
-				"host":  "example.database.windows.net",
-				"port":  "1433",
-				"login": []interface{}{},
-				"azure_login": []interface{}{
-					map[string]interface{}{
-						"tenant_id":     "tid-123",
-						"client_id":     "cid-456",
-						"client_secret": "secret",
-					},
-				},
-				"azuread_default_chain_auth":    []interface{}{},
-				"azuread_managed_identity_auth": []interface{}{},
-			},
+	cfg := model.ServerConfig{
+		Host:    "example.database.windows.net",
+		Port:    "1433",
+		Timeout: 30 * time.Second,
+		Azure: &model.AzureLoginConfig{
+			TenantID:     "tid-123",
+			ClientID:     "cid-456",
+			ClientSecret: "secret",
 		},
 	}
 
-	d := schema.TestResourceDataRaw(t, res.Schema, raw)
 	f := new(factory)
-	iface, err := f.GetConnector("server", d)
+	iface, err := f.GetConnector(cfg)
 	if err != nil {
 		t.Fatalf("GetConnector returned error: %v", err)
 	}
@@ -284,25 +245,15 @@ func TestGetConnector_AzureLogin(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestGetConnector_ManagedIdentity(t *testing.T) {
-	res := serverSchemaResource()
-	raw := map[string]interface{}{
-		"server": []interface{}{
-			map[string]interface{}{
-				"host":                       "example.database.windows.net",
-				"port":                       "1433",
-				"login":                      []interface{}{},
-				"azure_login":                []interface{}{},
-				"azuread_default_chain_auth": []interface{}{},
-				"azuread_managed_identity_auth": []interface{}{
-					map[string]interface{}{"user_id": "00000000-0000-0000-0000-000000000001"},
-				},
-			},
-		},
+	cfg := model.ServerConfig{
+		Host:    "example.database.windows.net",
+		Port:    "1433",
+		Timeout: 30 * time.Second,
+		MSI:     &model.MSIConfig{UserID: "00000000-0000-0000-0000-000000000001"},
 	}
 
-	d := schema.TestResourceDataRaw(t, res.Schema, raw)
 	f := new(factory)
-	iface, err := f.GetConnector("server", d)
+	iface, err := f.GetConnector(cfg)
 	if err != nil {
 		t.Fatalf("GetConnector returned error: %v", err)
 	}
@@ -313,38 +264,6 @@ func TestGetConnector_ManagedIdentity(t *testing.T) {
 	}
 	if c.FedauthMSI.UserID != "00000000-0000-0000-0000-000000000001" {
 		t.Errorf("FedauthMSI.UserID: got %q", c.FedauthMSI.UserID)
-	}
-}
-
-// serverSchemaResource returns a Resource with the standard server block schema used by GetConnector.
-func serverSchemaResource() *schema.Resource {
-	return &schema.Resource{
-		Schema: map[string]*schema.Schema{
-			"server": {
-				Type:     schema.TypeList,
-				MaxItems: 1,
-				Required: true,
-				Elem: &schema.Resource{
-					Schema: map[string]*schema.Schema{
-						"host":        {Type: schema.TypeString, Required: true},
-						"port":        {Type: schema.TypeString, Optional: true, Default: "1433"},
-						"login":       {Type: schema.TypeList, Optional: true, MaxItems: 1, Elem: &schema.Resource{Schema: map[string]*schema.Schema{"username": {Type: schema.TypeString, Optional: true}, "password": {Type: schema.TypeString, Optional: true}}}},
-						"azure_login": {Type: schema.TypeList, Optional: true, MaxItems: 1, Elem: &schema.Resource{Schema: map[string]*schema.Schema{"tenant_id": {Type: schema.TypeString, Optional: true}, "client_id": {Type: schema.TypeString, Optional: true}, "client_secret": {Type: schema.TypeString, Optional: true}}}},
-						"azuread_default_chain_auth": {
-							Type:     schema.TypeList,
-							MaxItems: 1,
-							Optional: true,
-							Elem: &schema.Resource{
-								Schema: map[string]*schema.Schema{
-									"use_oidc": {Type: schema.TypeBool, Optional: true, Default: false},
-								},
-							},
-						},
-						"azuread_managed_identity_auth": {Type: schema.TypeList, Optional: true, MaxItems: 1, Elem: &schema.Resource{Schema: map[string]*schema.Schema{"user_id": {Type: schema.TypeString, Optional: true}}}},
-					},
-				},
-			},
-		},
 	}
 }
 
